@@ -116,40 +116,46 @@
   <a href="#goals">Goals</a>
   <a href="#platform">Platform</a>
   <a href="#schedule">Schedule</a>
+  <a href="#references">References</a>
   <a href="#aiusage">AI Usage</a>
 </nav>
 
 <section id="summary">
   <h2>Summary</h2>
   <div class="card">
-    <p>We are implementing a dynamic load balancer for a distributed Barnes-Hut simulation running on a heterogeneous computing cluster. The system will use MPI and will also support execution across campus machines.</p>
+    <p>
+      We plan on implementing a dynamic load balancer for a distributed Barnes-Hut simulation running on a heterogeneous computing cluster. The load balancer and simulation will be built using MPI, and we will also implement a version to run across various campus computers.
+    </p>
   </div>
 </section>
 
 <section id="background">
   <h2>Background</h2>
   <div class="card">
-    <p>Barnes-Hut is an N-body simulation algorithm that computes forces between bodies using hierarchical spatial partitioning. It reduces complexity compared to naive pairwise computation while maintaining accuracy.</p>
-    <p>Work assignment strategies include:</p>
-    <ul>
-      <li><b>Static</b></li>
-      <li><b>Semi-static</b> (well-suited for Barnes-Hut)</li>
-      <li><b>Dynamic</b></li>
-    </ul>
-    <p>Semi-static approaches leverage slow-changing spatial distributions to minimize synchronization overhead.</p>
+    <p>
+      Barnes-Hut is an N-body simulation algorithm that computes the net force on each body by summing pairwise interactions (e.g., gravitational or electrostatic forces) from all other bodies, using their masses, positions, and distances to determine the resulting acceleration and motion in each iteration. 
+    </p>
+    <p>
+      Parallelized workloads generally have one of three work assignment techniques: static, semi-static, or dynamic. Semi-static is particularly well-suited for Barnes-Hut, since workloads for each body are cheap to compute and the spatial distribution of the bodies changes slowly. A well-balanced work distribution is likely to remain well-balanced for several iterations, reducing the amount of synchronization required for assignment.
+    </p>
+    <p>
+      Existing dynamic scheduler implementations, such as CUDA Dynamic Parallelism (CDP) and MPI-based distributed schedulers, enable runtime adaptation of work allocation. While CUDA primarily focuses on intra-device parallelism, multi-GPU or multi-node execution requires additional host-side coordination, as device-side kernels cannot directly manage work across nodes; concurrency is limited to the scope of a single device, and memory coherence is guaranteed only within the device’s global memory. In contrast, MPI-based dynamic schedulers, such as the one proposed in the paper, explicitly target multi-node environments by assigning tasks with the goal of minimizing overall completion time based on predicted convergence and scaling efficiency. The scheduler dynamically adjusts the number of workers assigned to each job using heuristics driven by marginal performance gains, enabling adaptive resource distribution at runtime. However, this approach assumes homogeneous worker performance, modeling training speed primarily as a function of worker count rather than node-specific characteristics. As a result, it improves utilization and scalability in distributed settings but remains limited in its ability to optimally balance workloads in heterogeneous clusters.
+    </p>
+    <p>
+      References: CUDA, MPI Scheduler for Distributed Training
+    </p>
   </div>
 </section>
 
 <section id="challenge">
   <h2>Challenges</h2>
   <div class="card">
-    <ul>
-      <li>Non-uniform workload per body</li>
-      <li>Fine-grained and inefficient communication patterns</li>
-      <li>Dynamic redistribution due to movement of bodies</li>
-      <li>Highly heterogeneous hardware (GPUs vs CPUs, virtualized systems)</li>
-      <li>Variable system load due to shared campus machines</li>
-    </ul>
+    <p>
+      Both the amount of work per body and the communication patterns in the Barnes-Hut algorithm are non-uniform. Additionally, the communication is fine-grained, which is an especially inefficient pattern for distributed computing. Although Barnes-Hut has some amount of locality, body movements eventually require a redistribution of work assignments.
+    </p>
+    <p>
+      Campus computers are also highly non-uniform in terms of computing power. The ECE computing cluster runs on datacenter-level GPUs (Tesla T4) while linux.andrew is virtualized and has no GPU access. Another factor contributing to the heterogeneity is the different real-time user activity, hence varying utilization of the cores. 
+    </p>
   </div>
 </section>
 
@@ -158,17 +164,17 @@
   <div class="card">
     <h3>Plan</h3>
     <ul>
-      <li>Implement Barnes-Hut with MPI</li>
-      <li>Build a dynamic load balancer</li>
-      <li>Optimize performance on a single machine</li>
-      <li>Deploy across multiple campus systems</li>
-      <li>Benchmark and analyze performance</li>
+      <li>Implement Barnes-Hut with MPI (see paper above)</li>
+      <li>Build a dynamic load balancer for distributed Barnes-Hut</li>
+      <li>MPI performance optimization on a single machine</li>
+      <li>Implement MPI for a distributed computing cluster: one computer from each of {GHC, ECE, linux.andrew, Hamerschlag}</li>
+      <li>Benchmark performance</li>
     </ul>
 
-    <h3>Stretch Goals</h3>
+    <h3>Hope Goals</h3>
     <ul>
       <li>Scale to more machines</li>
-      <li>Compare heterogeneous cluster configurations</li>
+      <li>Compare different distributions of machines (ex. 7 GHC vs one of each)</li>
     </ul>
   </div>
 </section>
@@ -176,7 +182,12 @@
 <section id="platform">
   <h2>Platform Choice</h2>
   <div class="card">
-    <p>We use MPI for communication across distributed systems. Our environment intentionally includes heterogeneous and geographically distributed machines to evaluate robustness of the load balancing strategy.</p>
+    <p>
+      We plan on implementing this project using MPI on various campus computers. MPI provides a clean interface for specific communication protocols we will use to communicate between the computers.
+    </p>
+    <p>
+      Our choice of computing environment is intentionally suboptimal, as our focus will be on developing a load balancing strategy that efficiently makes use of heterogeneous computers physically located fairly far from each other.
+    </p>
   </div>
 </section>
 
@@ -184,10 +195,10 @@
   <h2>Schedule</h2>
   <div class="card">
     <ul>
-      <li><b>Week of March 23:</b> Proposal and research</li>
-      <li><b>Week of March 30:</b> Initial MPI Barnes-Hut implementation</li>
-      <li><b>Week of April 6:</b> Distributed system implementation</li>
-      <li><b>Week of April 13:</b> Benchmarking and redesign</li>
+      <li><b>Week of March 23:</b> Project proposal, read paper</li>
+      <li><b>Week of March 30:</b> Initial Barnes-Hut MPI implementation based on paper</li>
+      <li><b>Week of April 6:</b> Distributed MPI implementation</li>
+      <li><b>Week of April 13:</b> Benchmark, identify bottlenecks, redesign</li>
       <li><b>Week of April 20:</b> Final report</li>
       <li><b>April 24:</b> Poster presentation during last lecture slot</li>
     </ul>
