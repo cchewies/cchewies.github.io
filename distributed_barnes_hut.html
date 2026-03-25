@@ -141,9 +141,6 @@
     <p>
       Existing dynamic scheduler implementations, such as CUDA Dynamic Parallelism (CDP) and MPI-based distributed schedulers, enable runtime adaptation of work allocation. While CUDA primarily focuses on intra-device parallelism, multi-GPU or multi-node execution requires additional host-side coordination, as device-side kernels cannot directly manage work across nodes; concurrency is limited to the scope of a single device, and memory coherence is guaranteed only within the device’s global memory. In contrast, MPI-based dynamic schedulers, such as the one proposed in the paper, explicitly target multi-node environments by assigning tasks with the goal of minimizing overall completion time based on predicted convergence and scaling efficiency. The scheduler dynamically adjusts the number of workers assigned to each job using heuristics driven by marginal performance gains, enabling adaptive resource distribution at runtime. However, this approach assumes homogeneous worker performance, modeling training speed primarily as a function of worker count rather than node-specific characteristics. As a result, it improves utilization and scalability in distributed settings but remains limited in its ability to optimally balance workloads in heterogeneous clusters.
     </p>
-    <p>
-      References: CUDA, MPI Scheduler for Distributed Training
-    </p>
   </div>
 </section>
 
