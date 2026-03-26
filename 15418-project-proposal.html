@@ -105,25 +105,31 @@
 <body>
 
 <header>
-  <h1>Heterogeneous Distributed Simulation Scheduler</h1>
+  <h1>Heterogeneous Distributed Barnes-Hut Scheduler</h1>
   <p>Dynamic Load Balancing for Distributed Barnes-Hut Simulations</p>
+  <p>Zhuoyi Zou (zhuoyiz), Vanessa Lam (yatheil)</p>
 </header>
 
 <nav>
   <a href="#summary">Summary</a>
   <a href="#background">Background</a>
   <a href="#challenge">Challenges</a>
+  <a href="#resources">Resources</a>
   <a href="#goals">Goals</a>
   <a href="#platform">Platform</a>
   <a href="#schedule">Schedule</a>
-  <a href="#references">References</a>
   <a href="#aiusage">AI Usage</a>
 </nav>
 
 <section id="url">
-  <h2>Website Link</h2>
+  <h2>Links</h2>
   <div class="card">
-    <p>https://cchewies.github.io/15418-project-proposal.html</p>
+    <p>
+      <a href="https://cchewies.github.io/15418-project-proposal.html" target="_blank"><b>Project Webpage</b></a>
+    </p>
+    <p>
+      <a href="https://cchewies.github.io/proposal.pdf" target="_blank"><b>Project Proposal</b></a>
+    </p>
   </div>
 </section>
 
@@ -131,7 +137,10 @@
   <h2>Summary</h2>
   <div class="card">
     <p>
-      We plan on implementing a dynamic load balancer for a distributed Barnes-Hut simulation running on a heterogeneous computing cluster. The load balancer and simulation will be built using MPI, and we will also implement a version to run across various campus computers.
+      We plan on implementing a dynamic load balancer for a distributed 
+      Barnes-Hut simulation running on a heterogeneous computing cluster. 
+      The load balancer and simulation will be built using MPI, and we will 
+      also implement a version to run across various campus computers.
     </p>
   </div>
 </section>
@@ -140,13 +149,49 @@
   <h2>Background</h2>
   <div class="card">
     <p>
-      Barnes-Hut is an N-body simulation algorithm that computes the net force on each body by summing pairwise interactions (e.g., gravitational or electrostatic forces) from all other bodies, using their masses, positions, and distances to determine the resulting acceleration and motion in each iteration. 
+      Barnes-Hut is an N-body simulation algorithm that computes the net 
+      force on each body by summing pairwise interactions (e.g., 
+      gravitational or electrostatic forces) from all other bodies, using 
+      their masses, positions, and distances to determine the resulting 
+      acceleration and motion in each iteration. 
     </p>
     <p>
-      Parallelized workloads generally have one of three work assignment techniques: static, semi-static, or dynamic. Semi-static is particularly well-suited for Barnes-Hut, since workloads for each body are cheap to compute and the spatial distribution of the bodies changes slowly. A well-balanced work distribution is likely to remain well-balanced for several iterations, reducing the amount of synchronization required for assignment.
+      Parallelized workloads generally have one of three work assignment 
+      techniques: static, semi-static, or dynamic. Semi-static is particularly 
+      well-suited for Barnes-Hut, since workloads for each body are cheap to 
+      compute and the spatial distribution of the bodies changes slowly. 
+      A well-balanced work distribution is likely to remain well-balanced 
+      for several iterations, reducing the amount of synchronization required 
+      for assignment.
     </p>
     <p>
-      Existing dynamic scheduler implementations, such as CUDA Dynamic Parallelism (CDP) and MPI-based distributed schedulers, enable runtime adaptation of work allocation. While CUDA primarily focuses on intra-device parallelism, multi-GPU or multi-node execution requires additional host-side coordination, as device-side kernels cannot directly manage work across nodes; concurrency is limited to the scope of a single device, and memory coherence is guaranteed only within the device’s global memory. In contrast, MPI-based dynamic schedulers, such as the one proposed in the paper, explicitly target multi-node environments by assigning tasks with the goal of minimizing overall completion time based on predicted convergence and scaling efficiency. The scheduler dynamically adjusts the number of workers assigned to each job using heuristics driven by marginal performance gains, enabling adaptive resource distribution at runtime. However, this approach assumes homogeneous worker performance, modeling training speed primarily as a function of worker count rather than node-specific characteristics. As a result, it improves utilization and scalability in distributed settings but remains limited in its ability to optimally balance workloads in heterogeneous clusters.
+      Existing dynamic scheduler implementations, such as CUDA Dynamic 
+      Parallelism (CDP) and MPI-based distributed schedulers, enable runtime 
+      adaptation of work allocation*. While CUDA primarily focuses on 
+      intra-device parallelism, multi-GPU or multi-node execution requires 
+      additional host-side coordination, as device-side kernels cannot directly 
+      manage work across nodes; concurrency is limited to the scope of a single
+      device, and memory coherence is guaranteed only within the device's 
+      global memory. 
+    </p>
+    <p>
+      In contrast, MPI-based dynamic schedulers, such as the 
+      one proposed in the paper, explicitly target multi-node environments by 
+      assigning tasks with the goal of minimizing overall completion time 
+      based on predicted convergence and scaling efficiency. The scheduler 
+      dynamically adjusts the number of workers assigned to each job using 
+      heuristics driven by marginal performance gains, enabling adaptive 
+      resource distribution at runtime. However, this approach assumes 
+      homogeneous worker performance, modeling training speed primarily as 
+      a function of worker count rather than node-specific characteristics. 
+      As a result, it improves utilization and scalability in distributed 
+      settings but remains limited in its ability to optimally balance 
+      workloads in heterogeneous clusters.
+    </p>
+    <p>
+      *References:
+      <a href="https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/dynamic-parallelism.html" target="_blank"><b>CUDA</b></a>
+      <a href="https://arxiv.org/abs/1908.08082" target="_blank"><b>MPI Dynamic Scheduler</b></a>
     </p>
   </div>
 </section>
@@ -155,10 +200,28 @@
   <h2>Challenges</h2>
   <div class="card">
     <p>
-      Both the amount of work per body and the communication patterns in the Barnes-Hut algorithm are non-uniform. Additionally, the communication is fine-grained, which is an especially inefficient pattern for distributed computing. Although Barnes-Hut has some amount of locality, body movements eventually require a redistribution of work assignments.
+      Both the amount of work per body and the communication patterns in the
+      Barnes-Hut algorithm are non-uniform. Additionally, the communication 
+      is fine-grained, which is an especially inefficient pattern for 
+      distributed computing. Although Barnes-Hut has some amount of locality, 
+      body movements eventually require a redistribution of work assignments.
     </p>
     <p>
-      Campus computers are also highly non-uniform in terms of computing power. The ECE computing cluster runs on datacenter-level GPUs (Tesla T4) while linux.andrew is virtualized and has no GPU access. Another factor contributing to the heterogeneity is the different real-time user activity, hence varying utilization of the cores. 
+      Campus computers are also highly non-uniform in terms of computing power. 
+      The ECE computing cluster runs on datacenter-level GPUs (Tesla T4) 
+      while linux.andrew is virtualized and has no GPU access. Another factor 
+      contributing to the heterogeneity is the different real-time user 
+      activity, hence varying utilization of the cores. 
+    </p>
+  </div>
+</section>
+
+<section id="resources">
+  <h2>Resources</h2>
+  <div class="card">
+    <p>
+      We will start our project based on the distributed Barnes-Hut starter 
+      code at <a href="https://arxiv.org/abs/2203.08966" target="_blank"><b>Distributed Barnes-Hut</b></a>
     </p>
   </div>
 </section>
@@ -166,20 +229,35 @@
 <section id="goals">
   <h2>Goals & Deliverables</h2>
   <div class="card">
-    <h3>Plan</h3>
+    <h3>Plan to achieve:</h3>
     <ul>
-      <li>Implement Barnes-Hut with MPI (see paper above)</li>
-      <li>Build a dynamic load balancer for distributed Barnes-Hut</li>
-      <li>MPI performance optimization on a single machine</li>
-      <li>Implement MPI for a distributed computing cluster: one computer from each of {GHC, ECE, linux.andrew, Hamerschlag}</li>
-      <li>Benchmark performance</li>
+      <li>Implement Barnes-Hut (with C++ starter code)</li>
+      <li>Enable rank-level parallelism with MPI (single-node + multi-rank + static assignment)</li>
+      <li>Build a dynamic load balancer (single-node + multi-rank + dynamic assignment)</li>
+      <li>Tuning & performance optimization on single node</li>
+      <li>Expand MPI implementation to support node-level parallelism (multi-node + multi-rank + dynamic assignment)</li>
+      <li>Expand dynamic load balancer to consider node heterogeneity {GHC, ECE, linux.andrew, Hamerschlag} (multi-node + multi-rank + improved dynamic assignment)</li>
+      <li>Benchmark performance with different combinations of heterogenous compute</li>
     </ul>
 
-    <h3>Hope Goals</h3>
+    <h3>Hope to achieve:</h3>
     <ul>
       <li>Scale to more machines</li>
       <li>Compare different distributions of machines (ex. 7 GHC vs one of each)</li>
     </ul>
+    <p>
+      The system would be capable of fairly distributing work among a 
+      heterogeneous cluster of computers while dynamically measuring each 
+      one's performance.
+    </p>
+    <p>
+      Performance Goal: Given that the network between the campus machines 
+      (even between GHC machines) is very slow, our first target would be 
+      to achieve any speedup above 1.0x when running across multiple machines. 
+      Ideally, our final goal would be to get as close to linear speedup as 
+      possible. If one ECE machine is roughly as powerful as two GHC machines, 
+      we should expect a 3x speedup of ECE + GHC over GHC alone.
+    </p>
   </div>
 </section>
 
@@ -187,10 +265,17 @@
   <h2>Platform Choice</h2>
   <div class="card">
     <p>
-      We plan on implementing this project using MPI on various campus computers. MPI provides a clean interface for specific communication protocols we will use to communicate between the computers.
+      We plan on implementing this project using MPI on various campus 
+      computers. MPI provides a clean interface for specific communication 
+      protocols we will use to communicate between the computers. We will 
+      write an implementation for MPI that targets distributed communication 
+      between campus computers.
     </p>
     <p>
-      Our choice of computing environment is intentionally suboptimal, as our focus will be on developing a load balancing strategy that efficiently makes use of heterogeneous computers physically located fairly far from each other.
+      Our choice of computing environment is intentionally suboptimal, as 
+      our focus will be on developing a load balancing strategy that 
+      efficiently makes use of heterogeneous computers physically located 
+      fairly far from each other.
     </p>
   </div>
 </section>
@@ -209,21 +294,13 @@
   </div>
 </section>
 
-<section id="resources">
-  <h2>Resources</h2>
-  <div class="card">
-    <ul>
-      <li><a href="https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/dynamic-parallelism.html" target="_blank"><b>CUDA</b></a></li>
-      <li><a href="https://arxiv.org/abs/1908.08082" target="_blank"><b>MPI Dynamic Scheduler</b></a></li>
-      <li><a href="https://arxiv.org/abs/2203.08966" target="_blank"><b>Distributed Barnes-Hut</b></a></li>
-    </ul>
-  </div>
-</section>
-
 <section id="aiusage">
   <h2>AI Usage</h2>
   <div class="card">
-    <p>All text was written without AI assistance. The format of this website was generated using an LLM.</p>
+    <p>
+      All text was written without AI assistance. The formatting template 
+      of this website was generated using an LLM.
+    </p>
   </div>
 </section>
 
