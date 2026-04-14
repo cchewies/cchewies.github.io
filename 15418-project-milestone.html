@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Heterogeneous Distributed Simulation Scheduler</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="15418-project.css" />
+</head>
+<body>
+
+<header>
+  <h1>Heterogeneous Distributed Barnes-Hut Scheduler</h1>
+  <p>Dynamic Load Balancing for Distributed Barnes-Hut Simulations</p>
+  <p>Zhuoyi Zou (zhuoyiz), Vanessa Lam (yatheil)</p>
+</header>
+
+<nav>
+  <a href="#summary">Summary</a>
+  <a href="#background">Background</a>
+  <a href="#challenge">Challenges</a>
+  <a href="#resources">Resources</a>
+  <a href="#goals">Goals</a>
+  <a href="#platform">Platform</a>
+  <a href="#schedule">Schedule</a>
+  <a href="#aiusage">AI Usage</a>
+</nav>
+
+<section id="url">
+  <h2>Links</h2>
+  <div class="card">
+    <p>
+      <a href="https://cchewies.github.io/15418-project.html" target="_blank"><b>Project Webpage</b></a>
+    </p>
+    <p>
+      <a href="https://cchewies.github.io/15418-project-milestone.html" target="_blank"><b>Project Milestone Webpage</b></a>
+    </p>
+    <p>
+      <a href="https://cchewies.github.io/milestone.pdf" target="_blank"><b>Project Milestone Report</b></a>
+    </p>
+  </div>
+</section>
+
+<section id="summary">
+  <h2>Summary</h2>
+  <div class="card">
+    <p>
+      So far, we have implemented four versions of the N-body (galaxy) 
+      simulation:
+    </p>
+    <ul>
+      <li>Serial N^2 naive running on a single thread</li>
+      <li>Serial NlogN Barnes-Hut running on a single thread</li>
+      <li>MPI single-node NlogN Barnes-Hut running on multiple processors 
+          on a single campus machine</li>
+      <li>MiniMPI (MMPI) NlogN Barnes-Hut running on multiple campus 
+          machines</li>
+    </ul>
+
+    <p>
+      Since MPI-native options do not work with the password login when 
+      attempting to ssh into multiple campus machines, we implemented MMPI, 
+      a tailored subset of MPI built on top of TCP. We also have a dynamic 
+      load balancer developed, using the calculation runtimes of each node as 
+      benchmarks for assigning an optimal amount of work to each node, which 
+      also uses Morton ordering to ensure each node gets a spatially-local 
+      set of stars.
+    </p>
+  </div>
+</section>
+
+<section id="goals">
+  <h2>Goals & Deliverables</h2>
+  <div class="card">
+    <p>Plan to achieve:</p>
+    <ul>
+      <li>
+        <s>Implement Barnes Hut (with C++ starter code)</s>
+      </li>
+      <li>
+        <s>Enable rank level parallelism with MPI (single node + multi rank + static assignment)</s>
+      </li>
+      <li>
+        <s>Build a dynamic load balancer (single node + multi rank + dynamic assignment)</s>
+      </li>
+      <li>
+        Tuning & performance optimization on single node
+      </li>
+      <li>
+        <s>Expand MPI implementation to support node level parallelism (multi node
+        + multi rank + dynamic assignment)</s>
+      </li>
+      <li>
+        <s>Expand dynamic load balancer to consider node heterogeneity (GHC, ECE, 
+        linux.andrew, Hamerschlag) (multi node + multi rank + improved dynamic 
+        assignment)</s>
+      </li>
+      <li>
+        Benchmark performance with different combinations of heterogeneous 
+        compute
+      </li>
+    </ul>
+
+    <p>Hope to achieve:</p>
+    <ul>
+      <li>
+        Scale to more machines
+      </li>
+      <li>
+        Compare different distributions of machines (ex. 7 GHC vs one of each)
+      </li>
+    </ul>
+
+    <p>
+      We are ahead of schedule with respect to the original plan. As of today 
+      (April 13th), we are starting the "redesign" step of the initial plan, 
+      which was scheduled for the latter half of this week.
+    </p>
+
+    <p>
+      We also believe that we can achieve both of our "nice to have" goals, 
+      since they are primarily focused on benchmarking a complete 
+      implementation rather than expanding the implementation itself. Our code
+      is designed to be configurable to various different execution 
+      environments.
+    </p>
+
+    <p>
+      We did encounter some difficulties with setting up our code to run on 
+      the ECE and Hamerschlag machines, as they do not have MPI or SDL2 
+      installed. Compiling separate versions of the code was a sufficient 
+      fix, however.
+    </p>
+
+    <p>
+      At the poster session, we plan on demoing our code running on some 
+      number of different campus machines. 
+    </p>
+
+  </div>
+</section>
+
+<section id="results">
+  <h2>Preliminary Results</h2>
+  <div class="card">
+    <p>
+      Barnes-Hut is a high-communication problem, so we do not expect linear
+      speedup from either the single-node MPI implementation or the distributed
+      MMPI implementation. Both implementations ran a simulation of 50,000 
+      stars on GHC machines only. A serial implementation takes around 100ms
+      per iteration.
+    </p>
+
+    <img src="https://cchewies.github.io/15418-prelim-results.png" 
+      style="max-width:100%; height:auto; margin: 16px 0;" />
+
+
+    <p>
+      Despite the subpar interconnect between separate GHC machines for the 
+      distributed implementation, we were surprised to see that it still had 
+      potential for speedup, reaching nearly 1.5x on 2 nodes (though 
+      single-node MPI reaches 1.7x). Although adding more nodes beyond 2 does
+      not improve speedup, we believe that this is due to our currently naive
+      implementation of allgather, which sends all data to a single node and
+      broadcasts back to everyone else.
+    </p>
+  </div>
+</section>
+
+<section id="concerns">
+  <h2>Concerns</h2>
+  <div class="card">
+    <p>
+      As discussed during our proposal meeting, the interconnect between
+      different campus machines (especially between GHC and linux.andrew) is
+      fairly slow, which is also noticeable in our preliminary results. 
+      However, we believe that it should still be fast enough to permit some
+      speedup, though we do not expect it to meet the speedup of a single-node
+      MPI implementation.
+    </p>
+  </div>
+</section>
+
+<section id="schedule">
+  <h2>Schedule</h2>
+  <div class="card">
+    <ul>
+      <li><b>Week of April 13, first half:</b> TODO</li>
+      <li><b>Week of April 13, second half:</b> TODO</li>
+      <li><b>Week of April 20:</b> Run final benchmarks, write report, make poster</li>
+    </ul>
+  </div>
+</section>
+
+<section id="aiusage">
+  <h2>AI Usage</h2>
+  <div class="card">
+    <p>
+      All text was written without AI assistance. The formatting template 
+      of this website was generated using an LLM.
+    </p>
+  </div>
+</section>
+
+<footer>
+  <p>15-418 Final Project</p>
+</footer>
+
+</body>
+</html>
